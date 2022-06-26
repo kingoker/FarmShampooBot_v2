@@ -6,9 +6,9 @@ After=network.target
 User=farm
 Group=
 
-WorkingDirectory=/home/farm/FarmShampooBot/
-Environment="PYTHONPATH=/home/farm/FarmShampooBot/"
-ExecStart=/home/farm/FarmShampooBot/.venv/bin/python /home/farm/FarmShampooBot/app.py
+WorkingDirectory=/home/farm/FarmShampooBot_v2/
+Environment="PYTHONPATH=/home/farm/FarmShampooBot_v2/"
+ExecStart=/home/farm/FarmShampooBot_v2/.venv/bin/python /home/farm/FarmShampooBot_v2/app.py
 
 [Install]
 WantedBy=multi-user.target
