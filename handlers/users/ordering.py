@@ -209,7 +209,7 @@ async def inline_kb_answer_callback_handler(query: types.CallbackQuery, state : 
         keyboard.add(*(KeyboardButton(k_text[lang]), ))
         await query.answer()
         await bot.delete_message(
-			query.from_user.id,
+			query.message.chat.id,
 			query.message.message_id,
         	)
         await bot.send_message(
