@@ -150,7 +150,7 @@ async def inline_kb_answer_callback_handler(query: types.CallbackQuery):
     # always answer callback queries, even if you have nothing to say
     # await query.answer(f'You answered with {answer_data!r}')
     await bot.delete_message(
-                            query.from_user.id,
+                            query.message.chat.id,
                             query.message.message_id,
 )
     # if answer_data == 'h++':
