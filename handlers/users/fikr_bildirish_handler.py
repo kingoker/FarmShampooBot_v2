@@ -1,6 +1,7 @@
 from aiogram import types
 from aiogram.dispatcher.filters.builtin import CommandHelp, CommandStart
 from database.database import session, Customer, Product, Organization
+from handlers.users.start import check_status
 from loader import dp, bot
 from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
@@ -33,11 +34,13 @@ async def order_handler(message: types.Message):
 @dp.message_handler(lambda message : message.text in ["⬅️Ortga", "⬅️Назад"], state=Customer_Fikr.baho)
 async def ortga(message : types.Message, state : FSMContext):
     user_id = message.from_user.id
-    customer = session.query(Customer).filter(Customer.customer_id == user_id).first()
-    lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
-    keyboard = menu_product_types_uz if lang == "uz" else menu_product_types_eng
-    await message.answer(message.text, reply_markup=keyboard)
-    await state.reset_state()
+    status = await check_status(user_id, state)
+    if status:
+        customer = session.query(Customer).filter(Customer.customer_id == user_id).first()
+        lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
+        keyboard = menu_product_types_uz if lang == "uz" else menu_product_types_eng
+        await message.answer(message.text, reply_markup=keyboard)
+        await state.reset_state()
 
 @dp.message_handler(lambda message : message.text in ["Все понравилось ⭐️⭐️⭐️⭐️⭐️", "Нормально ⭐️⭐️⭐️⭐️", "Удовлетворительно ⭐️⭐️⭐️", "Не понравилось ⭐️⭐️", "Хочу пожаловатся ⭐️", "Hammasi yoqadi ⭐️⭐️⭐️⭐️⭐️", "Yaxshi ⭐️⭐️⭐️⭐️", "Yoqmadi ⭐️⭐️⭐️", "Yomon ⭐️⭐️", "Juda yomon ⭐️"], state=Customer_Fikr.baho) 
 async def baho_qoyish(message : types.Message, state : FSMContext):
@@ -45,38 +48,44 @@ async def baho_qoyish(message : types.Message, state : FSMContext):
         "baho" : message.text,
         })   
     user_id = message.from_user.id
-    customer = session.query(Customer).filter(Customer.customer_id == user_id).first()
-    lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
-    text = {"uz" : "Fikr - mulohazangizni xabar xabar shaklida qoldiring.", "eng" : "Оставьте отзыв в виде сообщения."}
-    await message.answer(text[lang], reply_markup=ReplyKeyboardRemove())
-    await Customer_Fikr.comment.set()
+    status = await check_status(user_id, state)
+    if status:
+        customer = session.query(Customer).filter(Customer.customer_id == user_id).first()
+        lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
+        text = {"uz" : "Fikr - mulohazangizni xabar xabar shaklida qoldiring.", "eng" : "Оставьте отзыв в виде сообщения."}
+        await message.answer(text[lang], reply_markup=ReplyKeyboardRemove())
+        await Customer_Fikr.comment.set()
 
 
 @dp.message_handler(state=Customer_Fikr.baho)
 async def nothing(message : types.Message, state : FSMContext):
     user_id = message.from_user.id
-    customer = session.query(Customer).filter(Customer.customer_id == user_id).first()
-    lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
-    text = {"uz" : "😃 Juda yaxshi birgalikda buyurtma beramizmi?", "eng" : "😃 Привет, оформим вместе заказ?"}
-    await state.reset_state()
-    keyboard = menu_product_types_uz if lang == "uz" else menu_product_types_eng
-    await message.answer(text[lang], reply_markup=keyboard)
+    status = await check_status(user_id, state)
+    if status:
+        customer = session.query(Customer).filter(Customer.customer_id == user_id).first()
+        lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
+        text = {"uz" : "😃 Juda yaxshi birgalikda buyurtma beramizmi?", "eng" : "😃 Привет, оформим вместе заказ?"}
+        await state.reset_state()
+        keyboard = menu_product_types_uz if lang == "uz" else menu_product_types_eng
+        await message.answer(text[lang], reply_markup=keyboard)
 
 @dp.message_handler(state=Customer_Fikr.comment)
 async def fikr(message : types.Message, state : FSMContext):
     user_id = message.from_user.id
-    customer = session.query(Customer).filter(Customer.customer_id == user_id).first()
-    lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
-    text = {"eng" : "Спасибо за ваш отзыв!", "uz" : "Fikr -mulohazangiz uchun tashakkur!"}      
-    keyboard = menu_product_types_uz if lang == "uz" else menu_product_types_eng
-    await message.answer(text[lang], reply_markup=keyboard)
-    await state.update_data({
-        "comment" : message.text,
-        })
-    data = await state.get_data()
-    baho = data.get("baho")
-    comment = data.get("comment")
-    await state.reset_state()
-    for admin in ADMINS:
-        await bot.send_message(admin ,text=f"Оценка и отзывы, которые {customer.username} оставил для улучшения нашего сервиса:\n{baho}\n{comment}")
+    status = await check_status(user_id, state)
+    if status:
+        customer = session.query(Customer).filter(Customer.customer_id == user_id).first()
+        lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
+        text = {"eng" : "Спасибо за ваш отзыв!", "uz" : "Fikr -mulohazangiz uchun tashakkur!"}
+        keyboard = menu_product_types_uz if lang == "uz" else menu_product_types_eng
+        await message.answer(text[lang], reply_markup=keyboard)
+        await state.update_data({
+            "comment" : message.text,
+            })
+        data = await state.get_data()
+        baho = data.get("baho")
+        comment = data.get("comment")
+        await state.reset_state()
+        for admin in ADMINS:
+            await bot.send_message(admin ,text=f"Оценка и отзывы, которые {customer.username} оставил для улучшения нашего сервиса:\n{baho}\n{comment}")
 

@@ -1,6 +1,7 @@
 from aiogram import types
 from aiogram.dispatcher.filters.builtin import CommandHelp, CommandStart
 from database.database import session, Customer, Product, Organization, savat
+from handlers.users.start import check_status
 from loader import dp, bot
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.dispatcher.filters import Text, Regexp
@@ -16,23 +17,27 @@ from data.config import  PAYMENTS_PROVIDER_TOKEN, ADMINS
 @dp.message_handler(lambda message:message.text=="⬅️Ortga", state=Customer_Form.delivery)
 async def back_uz(message : types.Message, state : FSMContext):
     user_id = message.from_user.id
-    customer = session.query(Customer).filter(Customer.customer_id==user_id).first()
-    customer.products.clear()
-    session.commit()
-    text = "Bosh menyu"
-    await state.reset_state()
-    await message.answer(text, reply_markup=menu_product_types_uz)
+    status = await check_status(user_id, state)
+    if status:
+        customer = session.query(Customer).filter(Customer.customer_id==user_id).first()
+        customer.products.clear()
+        session.commit()
+        text = "Bosh menyu"
+        await state.reset_state()
+        await message.answer(text, reply_markup=menu_product_types_uz)
 
 
 @dp.message_handler(lambda message:message.text=="⬅️Назад", state=Customer_Form.delivery)
 async def back_eng(message : types.Message, state : FSMContext):
     user_id = message.from_user.id
-    customer = session.query(Customer).filter(Customer.customer_id==user_id).first()
-    customer.products.clear()
-    session.commit()
-    text = "Главное меню"
-    await state.reset_state()
-    await message.answer(text, reply_markup=menu_product_types_eng)
+    status = await check_status(user_id, state)
+    if status:
+        customer = session.query(Customer).filter(Customer.customer_id==user_id).first()
+        customer.products.clear()
+        session.commit()
+        text = "Главное меню"
+        await state.reset_state()
+        await message.answer(text, reply_markup=menu_product_types_eng)
 
 
 
@@ -40,15 +45,17 @@ async def back_eng(message : types.Message, state : FSMContext):
 @dp.message_handler(state=Customer_Form.delivery)
 async def delivery(message : types.Message, state : FSMContext):
     user_id = message.from_user.id
-    customer = session.query(Customer).filter(Customer.customer_id==user_id).first()
-    lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
-    records = session.query(Customer).filter(savat.c.customer_id==customer.customer_id).all()
-    if lang == "uz":
-        description = "To'lov qilish uchun quyidagi tugmani bosing."
-    else :
-        description = "Нажмите кнопку ниже, чтобы заплатить."    
-    await mahsulot_yuborish(message, description, records, customer)
-    await state.reset_state()
+    status = await check_status(user_id, state)
+    if status:
+        customer = session.query(Customer).filter(Customer.customer_id==user_id).first()
+        lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
+        records = session.query(Customer).filter(savat.c.customer_id==customer.customer_id).all()
+        if lang == "uz":
+            description = "To'lov qilish uchun quyidagi tugmani bosing."
+        else :
+            description = "Нажмите кнопку ниже, чтобы заплатить."
+        await mahsulot_yuborish(message, description, records, customer)
+        await state.reset_state()
 
 
 
@@ -63,14 +70,16 @@ async def checkout(pre_checkout_query: types.PreCheckoutQuery):
 @dp.message_handler(content_types=ContentTypes.SUCCESSFUL_PAYMENT)
 async def got_payment(message: types.Message):
     user_id = message.from_user.id
-    customer = session.query(Customer).filter(Customer.customer_id == user_id).first()
-    print(customer.products)
-    await admin_send_message(message=message, customer=customer, paid=True)
-    customer.products.clear()
-    customer.latitude = None
-    customer.longitude = None
-    session.commit()    
-    lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
-    text = {"uz":"Xaridingiz uchun rahmat.", "eng" : "Спасибо за покупку."}
-    keyboard = menu_product_types_uz if lang == "uz" else menu_product_types_eng    
-    await message.answer(text[lang],reply_markup=keyboard)
+    status = await check_status(user_id)
+    if status:
+        customer = session.query(Customer).filter(Customer.customer_id == user_id).first()
+        print(customer.products)
+        await admin_send_message(message=message, customer=customer, paid=True)
+        customer.products.clear()
+        customer.latitude = None
+        customer.longitude = None
+        session.commit()
+        lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
+        text = {"uz":"Xaridingiz uchun rahmat.", "eng" : "Спасибо за покупку."}
+        keyboard = menu_product_types_uz if lang == "uz" else menu_product_types_eng
+        await message.answer(text[lang],reply_markup=keyboard)

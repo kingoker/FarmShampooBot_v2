@@ -1,6 +1,6 @@
 from aiogram import types
 from aiogram.dispatcher.filters.builtin import CommandStart
-from loader import dp
+from loader import dp, bot
 from keyboards.default import phone_uz, phone_eng, menuStart, menu_product_types_eng, menu_product_types_uz
 from aiogram.dispatcher import FSMContext
 from states.user_state import Personal
@@ -19,6 +19,17 @@ PHONE_NUM = r'^[\+][0-9]{3}[0-9]{3}[0-9]{6}$'
 
 
 # print(message.sid)
+#Отлов всех сообщений
+async def check_status(chat_id, state=None):
+    custumer = session.query(Customer).filter(Customer.customer_id == chat_id).first()
+    print(f"Here is {custumer}")
+    if custumer is not None:
+        return True
+    if state is not None:
+        await state.reset_state()
+    await bot.send_message(chat_id,CommandStart())
+    return False
+
 @dp.message_handler(CommandStart())
 async def bot_start(message: types.Message):
     custumer = session.query(Customer).filter(Customer.customer_id == message.from_user.id).first()

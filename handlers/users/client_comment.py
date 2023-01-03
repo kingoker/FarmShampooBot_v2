@@ -1,6 +1,7 @@
 from aiogram import types
 from aiogram.dispatcher.filters.builtin import CommandHelp, CommandStart
 from database.database import session, Customer, Product, Organization, savat
+from handlers.users.start import check_status
 from loader import dp
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.dispatcher.filters import Text, Regexp
@@ -16,35 +17,39 @@ from data.config import ADMINS, OFFICE_LOCATION
 @dp.message_handler(lambda message : message.text in ["⬅️Назад", "⬅️Ortga"], state=Customer_Form.comment)
 async def back_from_comment(message : types.Message, state : FSMContext):
 	user_id = message.from_user.id
-	customer = session.query(Customer).filter(Customer.customer_id==user_id).first()
-	customer.products.clear()
-	session.commit()
-	lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
-	text = {
-		"uz" : "Bosh menyu",
-		"eng" : "Главное меню"
-	}
-	await state.reset_state()
-	keyboard = menu_product_types_uz if lang == "uz" else menu_product_types_eng
-	await message.answer(text[lang], reply_markup=keyboard)
+	status = await check_status(user_id, state)
+	if status:
+		customer = session.query(Customer).filter(Customer.customer_id==user_id).first()
+		customer.products.clear()
+		session.commit()
+		lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
+		text = {
+			"uz" : "Bosh menyu",
+			"eng" : "Главное меню"
+		}
+		await state.reset_state()
+		keyboard = menu_product_types_uz if lang == "uz" else menu_product_types_eng
+		await message.answer(text[lang], reply_markup=keyboard)
 
 
 @dp.message_handler(lambda message : message.text not in ["⬅️Назад", "⬅️Ortga"], state=Customer_Form.comment)
 async def comment_input(message : types.Message, state : FSMContext):
 	user_id = message.from_user.id
-	customer = session.query(Customer).filter(Customer.customer_id==user_id).first()
-	lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
-	comment = message.text
-	customer.comment = comment
-	session.commit()
-	# await state.update_data({
-	# 	"comment" : comment,
-	# 	})
-	# ikki tilga to'g'rila
-	keyboard = tolov_uz if lang == "uz" else tolov_eng
-	text = {
-		'uz': 'To\'lov turini tanlang!',
-		'eng': 'Выберите вариант оплаты',
-	}
-	await message.answer(text[lang], reply_markup=keyboard)
-	await Customer_Form.tolov_turi.set()
+	status = await check_status(user_id, state)
+	if status:
+		customer = session.query(Customer).filter(Customer.customer_id==user_id).first()
+		lang = "uz" if customer.language == "🇺🇿O'zbekcha" else "eng"
+		comment = message.text
+		customer.comment = comment
+		session.commit()
+		# await state.update_data({
+		# 	"comment" : comment,
+		# 	})
+		# ikki tilga to'g'rila
+		keyboard = tolov_uz if lang == "uz" else tolov_eng
+		text = {
+			'uz': 'To\'lov turini tanlang!',
+			'eng': 'Выберите вариант оплаты',
+		}
+		await message.answer(text[lang], reply_markup=keyboard)
+		await Customer_Form.tolov_turi.set()
