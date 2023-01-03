@@ -27,7 +27,7 @@ async def check_status(chat_id, state=None):
         return True
     if state is not None:
         await state.reset_state()
-    await bot.send_message(chat_id,CommandStart())
+    await bot.send_message(chat_id,text="Произошла ошибка, пройдите регистрацию заново /start")
     return False
 
 @dp.message_handler(CommandStart())
