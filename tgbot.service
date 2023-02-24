@@ -3,12 +3,12 @@ Description=Telegram BOt
 After=network.target
 
 [Service]
-User=farm
+User=root
 Group=
 
-WorkingDirectory=/home/farm/FarmShampooBot_v2/
-Environment="PYTHONPATH=/home/farm/FarmShampooBot_v2/"
-ExecStart=/home/farm/FarmShampooBot_v2/.venv/bin/python /home/farm/FarmShampooBot_v2/app.py
+WorkingDirectory=/home/FarmShampooBot_v2/
+Environment="PYTHONPATH=/home/FarmShampooBot_v2/"
+ExecStart=/home/FarmShampooBot_v2/.venv/bin/python /home/FarmShampooBot_v2/app.py
 
 [Install]
 WantedBy=multi-user.target
