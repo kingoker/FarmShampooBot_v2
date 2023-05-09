@@ -57,7 +57,7 @@ class Organization(Base):
     phone_number = Column(String(250))
 
 
-engine = create_engine('postgresql://gen_user:38o9wxk7f5@90.156.224.204:5432/default_db')
+engine = create_engine('postgresql://gen_user:38o9wxk7f5@185.154.192.218:5432/default_db')
 
 Base.metadata.create_all(engine)
 
